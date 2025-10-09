@@ -34,3 +34,44 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Backend: MongoDB Setup
+
+### 1) Environment
+
+Create a `.env.local` in the project root with:
+
+```
+MONGODB_URI=mongodb://localhost:27017/aura_bot
+```
+
+For MongoDB Atlas, use the connection string from your cluster.
+
+### 2) Install
+
+Already added as dependency:
+
+```
+npm i mongoose
+```
+
+### 3) Connection utility
+
+`src/lib/mongodb.ts` provides a cached connector for server code.
+
+### 4) Models
+
+`src/models/User.ts` defines a simple `User` model with `name` and `email`.
+
+### 5) API routes
+
+- Health: `GET /api/health` — checks DB connectivity
+- Users: `GET /api/users`, `POST /api/users` — list and create users
+
+Example:
+
+```
+curl http://localhost:3000/api/health
+curl -X POST http://localhost:3000/api/users -H 'Content-Type: application/json' -d '{"name":"Ada","email":"ada@example.com"}'
+```
+# Aura-Bot
