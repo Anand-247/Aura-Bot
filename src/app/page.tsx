@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from "next/link"
 import BotModal from '@/components/BotModal'
+import Header from '@/components/Header'
 
 // Professional SVG Icons
 const BotIcon = () => (
@@ -249,38 +250,18 @@ export default function Home() {
   // Enhanced main interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                My AI Bots
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Welcome back, <span className="font-semibold text-blue-600">{user?.name}</span>! 
-                Manage your personalized AI companions
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={openCreateModal}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <PlusIcon />
-                <span className="ml-2">Create New Bot</span>
-              </button>
-              <button
-                onClick={logout}
-                className="inline-flex items-center px-6 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <LogoutIcon />
-                <span className="ml-2">Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Header
+        title="My AI Bots"
+        subtitle={`Welcome back, ${user?.name}! Manage your personalized AI companions`}
+      >
+        <button
+          onClick={openCreateModal}
+          className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+        >
+          <PlusIcon />
+          <span className="ml-2">Create New Bot</span>
+        </button>
+      </Header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 

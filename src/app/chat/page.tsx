@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import Header from '@/components/Header'
 
 interface Bot {
   _id: string
@@ -155,28 +156,20 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      <Header
+        title="Bot Management"
+        subtitle={`Welcome, ${user?.name}!`}
+      >
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Create New Bot
+        </button>
+      </Header>
+
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Bot Management</h1>
-            <p className="text-gray-600">Welcome, {user?.name}!</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Create New Bot
-            </button>
-            <button
-              onClick={logout}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
 
         {/* Create/Edit Form */}
         {showCreateForm && (

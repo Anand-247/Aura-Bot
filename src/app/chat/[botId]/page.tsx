@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import Header from '@/components/Header'
 
 interface Bot {
   _id: string
@@ -14,10 +15,12 @@ interface Bot {
 }
 
 interface Message {
-  id: string
-  text: string
+  _id: string
+  message: string
   isUser: boolean
   timestamp: Date
+  userId: string
+  botId: string
 }
 
 export default function ChatPage({ params }: { params: { botId: string } }) {
@@ -28,6 +31,8 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -36,12 +41,22 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
     }
   }, [isAuthenticated, router])
 
-  // Fetch bot details
+  // Fetch bot details and chat history
   useEffect(() => {
     if (isAuthenticated && params.botId) {
       fetchBot()
+      fetchChatHistory()
     }
   }, [isAuthenticated, params.botId])
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const fetchBot = async () => {
     try {
@@ -55,14 +70,6 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
       if (response.ok) {
         const botData = await response.json()
         setBot(botData)
-        
-        // Add initial bot message
-        setMessages([{
-          id: '1',
-          text: `Hello! I'm ${botData.name}. ${botData.description}. How can I help you today?`,
-          isUser: false,
-          timestamp: new Date()
-        }])
       } else if (response.status === 401) {
         logout()
         router.push('/login')
@@ -77,57 +84,144 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
     }
   }
 
+  const fetchChatHistory = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/chat?botId=${params.botId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const chatMessages = await response.json()
+        setMessages(chatMessages)
+        
+        // If no messages exist, add initial bot message
+        if (chatMessages.length === 0 && bot) {
+          const initialMessage = {
+            _id: 'initial',
+            message: `Hello! I'm ${bot.name}. ${bot.description}. How can I help you today?`,
+            isUser: false,
+            timestamp: new Date(),
+            userId: user?.id || '',
+            botId: params.botId
+          }
+          setMessages([initialMessage])
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error)
+    }
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || sending) return
+    if (!newMessage.trim() || sending || !bot) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: newMessage,
-      isUser: true,
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, userMessage])
+    const messageToSend = newMessage.trim()
     setNewMessage('')
     setSending(true)
 
-    // Simulate bot response (static for now)
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: generateBotResponse(newMessage, bot?.initialContext || ''),
-        isUser: false,
-        timestamp: new Date()
+    // Create user message object for instant display
+    const tempUserMessage: Message = {
+      _id: `temp-${Date.now()}`,
+      message: messageToSend,
+      isUser: true,
+      timestamp: new Date(),
+      userId: user?.id || '',
+      botId: params.botId
+    }
+
+    // Instantly add user message to UI
+    setMessages(prev => [...prev, tempUserMessage])
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: messageToSend,
+          botId: params.botId
+        })
+      })
+
+      if (response.ok) {
+        const { userMessage, botMessage } = await response.json()
+        // Replace the temporary user message with the real one and add bot response
+        setMessages(prev => {
+          const withoutTemp = prev.filter(msg => msg._id !== tempUserMessage._id)
+          return [...withoutTemp, userMessage, botMessage]
+        })
+      } else {
+        console.error('Failed to send message')
+        // Remove the temporary message and revert input
+        setMessages(prev => prev.filter(msg => msg._id !== tempUserMessage._id))
+        setNewMessage(messageToSend)
       }
-      setMessages(prev => [...prev, botResponse])
+    } catch (error) {
+      console.error('Failed to send message:', error)
+      // Remove the temporary message and revert input
+      setMessages(prev => prev.filter(msg => msg._id !== tempUserMessage._id))
+      setNewMessage(messageToSend)
+    } finally {
       setSending(false)
-    }, 1000)
+    }
   }
 
-  const generateBotResponse = (userMessage: string, context: string): string => {
-    // Simple static responses based on keywords
-    const message = userMessage.toLowerCase()
-    
-    if (message.includes('hello') || message.includes('hi')) {
-      return "Hello there! Great to meet you! How are you doing today?"
-    } else if (message.includes('how are you')) {
-      return "I'm doing fantastic! Thanks for asking. What's on your mind?"
-    } else if (message.includes('help')) {
-      return "I'd be happy to help! What do you need assistance with?"
-    } else if (message.includes('thank')) {
-      return "You're very welcome! Is there anything else I can help you with?"
-    } else if (message.includes('bye') || message.includes('goodbye')) {
-      return "Goodbye! It was great chatting with you. Take care!"
-    } else {
-      return "That's interesting! Tell me more about that. I'm here to help and chat with you."
+  const handleClearChat = async () => {
+    if (!confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
+      return
+    }
+
+    setClearing(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/chat?botId=${params.botId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        setMessages([])
+        // Add initial bot message after clearing
+        if (bot) {
+          const initialMessage = {
+            _id: 'initial',
+            message: `Hello! I'm ${bot.name}. ${bot.description}. How can I help you today?`,
+            isUser: false,
+            timestamp: new Date(),
+            userId: user?.id || '',
+            botId: params.botId
+          }
+          setMessages([initialMessage])
+        }
+      } else {
+        console.error('Failed to clear chat history')
+      }
+    } catch (error) {
+      console.error('Failed to clear chat history:', error)
+    } finally {
+      setClearing(false)
     }
   }
 
   if (!isAuthenticated || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading chat...</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <div className="text-xl font-medium text-gray-700">Loading chat...</div>
+        </div>
       </div>
     )
   }
@@ -141,32 +235,37 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/')}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                ← Back to Bots
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{bot.name}</h1>
-                <p className="text-sm text-gray-600">{bot.description}</p>
-              </div>
-            </div>
-            <button
-              onClick={logout}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex flex-col">
+      <Header
+        title={bot.name}
+        subtitle={bot.description}
+        showBackButton={true}
+        backButtonText="Back to Bots"
+        backButtonHref="/"
+      >
+        <button
+          onClick={handleClearChat}
+          disabled={clearing || messages.length <= 1}
+          className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-semibold rounded-xl text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {clearing ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Clearing...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear Chat
+            </>
+          )}
+        </button>
+      </Header>
 
       {/* Chat Messages */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
@@ -174,21 +273,21 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <div
-                key={message.id}
+                key={message._id}
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                     message.isUser
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-900'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 border border-gray-200'
                   }`}
                 >
-                  <p className="text-sm">{message.text}</p>
+                  <p className="text-sm leading-relaxed">{message.message}</p>
                   <p className={`text-xs mt-1 ${
                     message.isUser ? 'text-blue-100' : 'text-gray-500'
                   }`}>
-                    {message.timestamp.toLocaleTimeString()}
+                    {new Date(message.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
@@ -207,6 +306,8 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
                 </div>
               </div>
             )}
+            {/* Scroll anchor */}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Message Input */}

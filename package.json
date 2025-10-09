@@ -9,9 +9,11 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
     "next": "15.5.4",
+    "openai": "^6.2.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
