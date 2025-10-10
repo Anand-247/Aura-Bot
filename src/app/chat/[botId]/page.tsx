@@ -5,6 +5,33 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 
+// SVG Icons matching the theme
+const LoadingSpinner = () => (
+  <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+)
+
+const SmallLoadingSpinner = () => (
+  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+)
+
+const DeleteIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+)
+
+const SendIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+  </svg>
+)
+
 interface Bot {
   _id: string
   name: string
@@ -214,13 +241,10 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
 
   if (!isAuthenticated || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <div className="text-xl font-medium text-gray-700">Loading chat...</div>
+          <LoadingSpinner />
+          <div className="text-xl font-semibold text-gray-700">Loading chat...</div>
         </div>
       </div>
     )
@@ -228,8 +252,16 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
 
   if (!bot) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-red-600">Bot not found</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-red-600 mb-4">Bot not found</div>
+          <button
+            onClick={() => router.push('/')}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            Return to Home
+          </button>
+        </div>
       </div>
     )
   }
@@ -246,55 +278,59 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
         <button
           onClick={handleClearChat}
           disabled={clearing || messages.length <= 1}
-          className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-semibold rounded-xl text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-semibold rounded-xl text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
         >
           {clearing ? (
             <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Clearing...
+              <SmallLoadingSpinner />
+              <span>Clearing...</span>
             </>
           ) : (
             <>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Clear Chat
+              <DeleteIcon />
+              <span className="ml-2">Clear Chat</span>
             </>
           )}
         </button>
       </Header>
 
-      {/* Chat Messages */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
-        <div className="bg-white rounded-lg shadow-sm h-[calc(100vh-200px)] flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Chat Messages Container */}
+      <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 h-[calc(100vh-220px)] flex flex-col overflow-hidden">
+          
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {messages.map((message) => (
               <div
                 key={message._id}
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-xs lg:max-w-md xl:max-w-lg px-5 py-3 rounded-2xl shadow-md ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 border border-gray-200'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-sm'
+                      : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-900 border border-gray-200 rounded-bl-sm'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.message}</p>
-                  <p className={`text-xs mt-1 ${
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {message.message}
+                  </p>
+                  <p className={`text-xs mt-2 ${
                     message.isUser ? 'text-blue-100' : 'text-gray-500'
                   }`}>
-                    {new Date(message.timestamp).toLocaleTimeString()}
+                    {new Date(message.timestamp).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
                   </p>
                 </div>
               </div>
             ))}
+            
+            {/* Typing Indicator */}
             {sending && (
               <div className="flex justify-start">
-                <div className="bg-gray-200 text-gray-900 max-w-xs lg:max-w-md px-4 py-2 rounded-lg">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 text-gray-900 max-w-xs px-5 py-3 rounded-2xl rounded-bl-sm shadow-md">
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -306,27 +342,29 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
                 </div>
               </div>
             )}
+            
             {/* Scroll anchor */}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Message Input */}
-          <div className="border-t p-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
+          {/* Message Input Area */}
+          <div className="border-t border-gray-200 bg-gray-50/50 p-4">
+            <form onSubmit={handleSendMessage} className="flex gap-3">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white shadow-sm transition-all duration-200"
                 disabled={sending}
               />
               <button
                 type="submit"
                 disabled={!newMessage.trim() || sending}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Send
+                <SendIcon />
+                <span className="ml-2">Send</span>
               </button>
             </form>
           </div>
@@ -335,4 +373,3 @@ export default function ChatPage({ params }: { params: { botId: string } }) {
     </div>
   )
 }
-
