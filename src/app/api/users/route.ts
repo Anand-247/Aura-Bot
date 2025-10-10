@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { User } from '@/models/User'
 
@@ -8,7 +8,7 @@ export async function GET() {
 	return NextResponse.json(users, { status: 200 })
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 	await connectToDatabase()
 	const body = await request.json()
 	const { name, email } = body

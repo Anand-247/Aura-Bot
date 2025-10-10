@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { Bot } from '@/models/Bot'
 import { ChatMessage } from '@/models/ChatMessage'
@@ -7,7 +7,7 @@ import OpenAI from 'openai'
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 // POST /api/chat - send a new message
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 }
 
 // GET /api/chat?botId=xxx - get chat history for a specific bot
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 }
 
 // DELETE /api/chat?botId=xxx - clear chat history for a specific bot
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)

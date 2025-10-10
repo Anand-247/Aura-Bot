@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { Bot } from '@/models/Bot'
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth'
 
 // GET /api/bots - Get all bots for the authenticated user
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 }
 
 // POST /api/bots - Create a new bot
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)

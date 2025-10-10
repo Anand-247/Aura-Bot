@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { Bot } from '@/models/Bot'
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth'
 
 // GET /api/bots/[id] - Get a specific bot
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
@@ -32,7 +32,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // PUT /api/bots/[id] - Update a specific bot
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
@@ -72,7 +72,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE /api/bots/[id] - Delete a specific bot
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
 	try {
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
