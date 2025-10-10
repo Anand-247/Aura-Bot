@@ -4,8 +4,10 @@ import { Bot } from '@/models/Bot'
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth'
 
 // GET /api/bots/[id] - Get a specific bot
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
 	try {
+		const { id } = await context.params
+
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
 
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 		}
 
 		await connectToDatabase()
-		const bot = await Bot.findOne({ _id: params.id, createdBy: payload.userId }).lean()
+		const bot = await Bot.findOne({ _id: id, createdBy: payload.userId }).lean()
 		
 		if (!bot) {
 			return NextResponse.json({ error: 'Bot not found' }, { status: 404 })
@@ -32,8 +34,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT /api/bots/[id] - Update a specific bot
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
 	try {
+		const { id } = await context.params
+
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
 
@@ -50,13 +54,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 		const body = await request.json()
 		const { name, description, initialContext } = body
 		
-		const updateData: any = {}
+		const updateData: Record<string, any> = {}
 		if (name) updateData.name = name
 		if (description) updateData.description = description
 		if (initialContext) updateData.initialContext = initialContext
 		
 		const bot = await Bot.findOneAndUpdate(
-			{ _id: params.id, createdBy: payload.userId }, 
+			{ _id: id, createdBy: payload.userId }, 
 			updateData, 
 			{ new: true }
 		).lean()
@@ -72,8 +76,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/bots/[id] - Delete a specific bot
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
 	try {
+		const { id } = await context.params
+
 		const authHeader = request.headers.get('authorization')
 		const token = extractTokenFromHeader(authHeader)
 
@@ -87,7 +93,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 		}
 
 		await connectToDatabase()
-		const bot = await Bot.findOneAndDelete({ _id: params.id, createdBy: payload.userId })
+		const bot = await Bot.findOneAndDelete({ _id: id, createdBy: payload.userId })
 		
 		if (!bot) {
 			return NextResponse.json({ error: 'Bot not found' }, { status: 404 })
