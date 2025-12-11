@@ -52,12 +52,13 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
 		await connectToDatabase()
 		const body = await request.json()
-		const { name, description, initialContext } = body
+		const { name, description, initialContext, contextFiles } = body
 		
 		const updateData: Record<string, any> = {}
 		if (name) updateData.name = name
 		if (description) updateData.description = description
 		if (initialContext) updateData.initialContext = initialContext
+		if (contextFiles !== undefined) updateData.contextFiles = contextFiles
 		
 		const bot = await Bot.findOneAndUpdate(
 			{ _id: id, createdBy: payload.userId }, 

@@ -63,11 +63,22 @@ const LoadingSpinner = () => (
   </svg>
 )
 
+interface ContextFile {
+  _id?: string
+  fileName: string
+  filePath: string
+  fileType: 'photo' | 'pdf' | 'other'
+  fileSize: number
+  mimeType: string
+  uploadedAt?: Date | string
+}
+
 interface Bot {
   _id: string
   name: string
   description: string
   initialContext: string
+  contextFiles?: ContextFile[]
   createdAt: string
   updatedAt: string
 }
@@ -111,7 +122,7 @@ export default function Home() {
     }
   }
 
-  const handleBotSubmit = async (formData: { name: string; description: string; initialContext: string }) => {
+  const handleBotSubmit = async (formData: { name: string; description: string; initialContext: string; contextFiles?: any[] }) => {
     setModalLoading(true)
     try {
       const token = localStorage.getItem('token')

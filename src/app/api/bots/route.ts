@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
 		await connectToDatabase()
 		const body = await request.json()
-		const { name, description, initialContext } = body
+		const { name, description, initialContext, contextFiles } = body
 		
 		if (!name || !description || !initialContext) {
 			return NextResponse.json({ error: 'name, description, and initialContext are required' }, { status: 400 })
@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
 		const bot = await Bot.create({ 
 			name, 
 			description, 
-			initialContext, 
+			initialContext,
+			contextFiles: contextFiles || [],
 			createdBy: payload.userId 
 		})
 		return NextResponse.json(bot, { status: 201 })

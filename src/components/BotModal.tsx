@@ -28,11 +28,46 @@ const LoadingSpinner = () => (
   </svg>
 )
 
+const UploadIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+  </svg>
+)
+
+const DeleteIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+)
+
+const ImageIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+)
+
+const PdfIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+  </svg>
+)
+
+interface ContextFile {
+  _id?: string
+  fileName: string
+  filePath: string
+  fileType: 'photo' | 'pdf' | 'other'
+  fileSize: number
+  mimeType: string
+  uploadedAt?: Date | string
+}
+
 interface Bot {
   _id: string
   name: string
   description: string
   initialContext: string
+  contextFiles?: ContextFile[]
   createdAt: string
   updatedAt: string
 }
@@ -40,7 +75,7 @@ interface Bot {
 interface BotModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (formData: { name: string; description: string; initialContext: string }) => void
+  onSubmit: (formData: { name: string; description: string; initialContext: string; contextFiles: ContextFile[], botType: 'context' | 'media' }) => void
   editingBot?: Bot | null
   loading?: boolean
 }
@@ -51,6 +86,9 @@ export default function BotModal({ isOpen, onClose, onSubmit, editingBot, loadin
     description: '',
     initialContext: ''
   })
+  const [botType, setBotType] = useState<'context' | 'media'>('context')
+  const [contextFiles, setContextFiles] = useState<ContextFile[]>([])
+  const [uploading, setUploading] = useState(false)
 
   // Update form data when editing bot changes
   useEffect(() => {
@@ -60,18 +98,73 @@ export default function BotModal({ isOpen, onClose, onSubmit, editingBot, loadin
         description: editingBot.description,
         initialContext: editingBot.initialContext
       })
+      setContextFiles(editingBot.contextFiles || [])
+      setBotType((editingBot.contextFiles && editingBot.contextFiles.length > 0) ? 'media' : 'context');
     } else {
       setFormData({ name: '', description: '', initialContext: '' })
+      setContextFiles([])
+      setBotType('context')
     }
   }, [editingBot])
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to upload file')
+        }
+
+        return await response.json()
+      })
+
+      const uploadedFiles = await Promise.all(uploadPromises)
+      setContextFiles([...contextFiles, ...uploadedFiles])
+    } catch (error) {
+      console.error('File upload error:', error)
+      alert(error instanceof Error ? error.message : 'Failed to upload files')
+    } finally {
+      setUploading(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveFile = (index: number) => {
+    setContextFiles(contextFiles.filter((_, i) => i !== index))
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    onSubmit({ ...formData, contextFiles, botType })
   }
 
   const handleClose = () => {
     setFormData({ name: '', description: '', initialContext: '' })
+    setContextFiles([])
+    setBotType('context')
     onClose()
   }
 
@@ -105,6 +198,31 @@ export default function BotModal({ isOpen, onClose, onSubmit, editingBot, loadin
         <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             
+            {/* Bot Type Toggle */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Bot Type
+              </label>
+              <div className="flex rounded-xl bg-gray-200 p-1">
+                <button
+                  type="button"
+                  onClick={() => setBotType('context')}
+                  className={`w-full text-center px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${botType === 'context' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'} disabled:opacity-75 disabled:cursor-not-allowed`}
+                  disabled={!!editingBot}
+                >
+                  Context Based
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBotType('media')}
+                  className={`w-full text-center px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${botType === 'media' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'} disabled:opacity-75 disabled:cursor-not-allowed`}
+                  disabled={!!editingBot}
+                >
+                  Media Based
+                </button>
+              </div>
+            </div>
+
             {/* Name and Description Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -156,6 +274,98 @@ export default function BotModal({ isOpen, onClose, onSubmit, editingBot, loadin
                 required
               />
             </div>
+
+            {/* File Upload Section (Conditional) */}
+            {botType === 'media' && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Context Files (Photos & PDFs)
+                </label>
+                <div className="bg-green-50 border border-green-100 rounded-xl p-3 mb-3">
+                  <p className="text-xs text-green-700 leading-relaxed">
+                    <strong>Tip:</strong> Upload photos and PDFs to provide additional context for your bot. 
+                    These files will be stored and can be referenced in conversations. After uploading, embeddings will be generated and saved for each file.
+                  </p>
+                </div>
+                
+                {/* File Input */}
+                <div className="mb-4">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      {uploading ? (
+                        <>
+                          <LoadingSpinner />
+                          <p className="mt-2 text-sm text-gray-500">Uploading...</p>
+                        </>
+                      ) : (
+                        <>
+                          <UploadIcon />
+                          <p className="mt-2 text-sm text-gray-500">
+                            <span className="font-semibold">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Photos (JPEG, PNG, GIF, WebP) and PDFs (Max 10MB)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      multiple
+                      accept="image/*,.pdf"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+
+                {/* Uploaded Files List */}
+                {contextFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">
+                      Uploaded Files ({contextFiles.length})
+                    </p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {contextFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            {file.fileType === 'photo' ? (
+                              <div className="flex-shrink-0">
+                                <ImageIcon />
+                              </div>
+                            ) : (
+                              <div className="flex-shrink-0">
+                                <PdfIcon />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {file.fileName}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatFileSize(file.fileSize)} • {file.fileType.toUpperCase()}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(index)}
+                            className="ml-3 p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={uploading}
+                          >
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t border-gray-200">
