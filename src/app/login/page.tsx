@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
 
 // SVG Icons matching the theme
 const LoginIcon = () => (
@@ -37,6 +38,7 @@ const BotIcon = () => (
 )
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -62,13 +64,12 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        localStorage.setItem('token', data.user.token)
-        localStorage.setItem('user', JSON.stringify({
+        // Use AuthContext for login (NEVER set localStorage here!)
+        login(data.user.token, {
           id: data.user.id,
           name: data.user.name,
           email: data.user.email
-        }))
-        
+        });
         router.push('/')
       } else {
         setError(data.error || 'Login failed')
